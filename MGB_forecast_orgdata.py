@@ -42,7 +42,7 @@ def create_ensemble_dataframe(ensemble_data, forecast_dates):
 
 
 
-# Functions that aggregates ensemble forecasts (of a pandas dataframe) into different time scales
+# Function that aggregates ensemble forecasts (of a pandas dataframe) into different time scales
 def average_lead_times_dataframe(ensemble_df, lead_times_to_aggregate):
     # Get the unique forecast dates in the DataFrame
     forecast_dates = ensemble_df.index.get_level_values('Forecast Date').unique()
