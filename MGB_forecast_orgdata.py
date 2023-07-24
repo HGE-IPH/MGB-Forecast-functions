@@ -43,22 +43,25 @@ def create_ensemble_dataframe(ensemble_data, forecast_dates):
 
 
 # Function that aggregates ensemble forecasts (of a pandas dataframe) into different time scales
-def average_lead_times_dataframe(ensemble_df, lead_times_to_aggregate):
+# Observations are only averaged if the "max_nan_percentage_obs" criterion is met
+# if max_nan_percentage_obs is set to a value different from None (0 to 1), it assumes that observations are in the first column (before members) 
+def average_lead_times_dataframe(ensemble_df, lead_times_to_aggregate, max_nan_percentage_obs=None):
     # Get the unique forecast dates in the DataFrame
     forecast_dates = ensemble_df.index.get_level_values('Forecast Date').unique()
 
     # Perform averaging for each forecast date separately
     averaged_dfs = []
     updated_lead_times = []
+    
     for date in forecast_dates:
         # Use boolean indexing to select all rows with the current forecast date
         df_slice = ensemble_df[ensemble_df.index.get_level_values('Forecast Date') == date]
         num_lead_times = df_slice.index.get_level_values('LT').nunique()
 
-        # Calculate the number of slices based on lead_times_per_average for each forecast date
+        # Calculate the number of slices based on lead_times_to_aggregate for each forecast date
         num_slices = num_lead_times // lead_times_to_aggregate
 
-        # Create slices for the DataFrame based on lead_times_per_average for each forecast date
+        # Create slices for the DataFrame based on lead_times_to_aggregate for each forecast date
         slices = [slice(i * lead_times_to_aggregate, (i + 1) * lead_times_to_aggregate) for i in range(num_slices)]
 
         # Perform averaging for each slice and append to the list
@@ -66,19 +69,58 @@ def average_lead_times_dataframe(ensemble_df, lead_times_to_aggregate):
         
         # Record the updated lead times for each slice
         updated_lead_times.extend(range(1, len(slices) + 1))
+           
+    # Check option for maximum nan percentage
+    if max_nan_percentage_obs is not None:
+        
+        for i, obsfor_group in enumerate(averaged_dfs):
+        
+            # Calculate the number of NaN values in the slice
+            sum_nan_values = obsfor_group['Obs'].isnull().sum()
+                           
+            # Calculate the percentage of NaN values
+            percentage_nan_values = sum_nan_values / lead_times_to_aggregate
+            
+            # Check if the percentage of NaN values satisfies the minimum requirements
+            if percentage_nan_values > max_nan_percentage_obs:                          
+               # Set Observed in all lead times as nan values. Observed values are set in first row
+               averaged_dfs[i].iloc[:,0] = np.nan           
+               
 
     # Concatenate the results for all forecast dates
     averaged_df = pd.concat([df.groupby(['Forecast Date']).mean() for df in averaged_dfs], axis=0)
-    
+
     # Insert the updated LT column
     averaged_df.insert(0, 'LT', updated_lead_times)
-    
-     # Set 'Forecast Date' and 'LT' columns as the MultiIndex
+
+    # Set 'Forecast Date' and 'LT' columns as the MultiIndex
     averaged_df.set_index('LT', append=True, inplace=True)
 
     return averaged_df
 
 
+# Pair observed data with forecast dates and lead times
+def pair_obs_forecast_LTs(observed_df, ensemble_df):
+    paired_data = []
+
+# Iterate through each forecast date and lead time and pair the observed value
+    for (forecast_date, lead_time), forecast_values in ensemble_df.iterrows():
+        # Calculate the corresponding date based on the lead time
+        target_date = forecast_date + pd.Timedelta(days=lead_time - 1)
+
+        # Extract the observed value for the target date
+        observed_value = observed_df.loc[target_date]
+
+        # Append the observed value, forecast date, and lead time to the list
+        paired_data.append([forecast_date, lead_time, observed_value])
+
+    # Create a new DataFrame from the list of paired data
+    paired_df = pd.DataFrame(paired_data, columns=['Forecast Date', 'LT', 'Obs'])
+
+    # Set the forecast dates and lead times as the index to the DataFrame
+    paired_df.set_index(['Forecast Date', 'LT'], inplace=True)
+
+    return paired_df
 
 
 # Function to aggregate forecasts across lead times directly in the original matrix
