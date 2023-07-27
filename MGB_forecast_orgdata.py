@@ -100,26 +100,27 @@ def average_lead_times_dataframe(ensemble_df, lead_times_to_aggregate, max_nan_p
 
 
 # Pair observed data with forecast dates and lead times
-def pair_obs_forecast_LTs(observed_df, ensemble_df):
-    paired_data = []
-
-# Iterate through each forecast date and lead time and pair the observed value
+def pair_obs_forecast_LTs(observed_df, ensemble_df): 
+    indexes_fcst = ensemble_df.index.get_level_values('Forecast Date')
+    indexes_LT = ensemble_df.index.get_level_values('LT')
+    observed_values = np.empty((len(indexes_fcst)))
+    
+    i=0
+    # Iterate through each forecast date and lead time and pair the observed value
     for (forecast_date, lead_time), forecast_values in ensemble_df.iterrows():
         # Calculate the corresponding date based on the lead time
         target_date = forecast_date + pd.Timedelta(days=lead_time - 1)
-
+    
         # Extract the observed value for the target date
-        observed_value = observed_df.loc[target_date]
-
-        # Append the observed value, forecast date, and lead time to the list
-        paired_data.append([forecast_date, lead_time, observed_value])
-
+        observed_values[i] = observed_df.loc[target_date].values
+        i+=1
+    
     # Create a new DataFrame from the list of paired data
-    paired_df = pd.DataFrame(paired_data, columns=['Forecast Date', 'LT', 'Obs'])
-
+    paired_df = pd.DataFrame({'Forecast Date': indexes_fcst, 'LT': indexes_LT, 'Obs': observed_values})
+    
     # Set the forecast dates and lead times as the index to the DataFrame
     paired_df.set_index(['Forecast Date', 'LT'], inplace=True)
-
+    
     return paired_df
 
 
