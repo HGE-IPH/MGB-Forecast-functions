@@ -5,7 +5,8 @@ IPH-UFRGS
 """
 
 import numpy as np
-import pandas as pd   
+import pandas as pd 
+import datetime  
 
 #=====================================================================================
 #Codes to organize forecast data
@@ -29,6 +30,7 @@ def create_simulation_dataframe(sim_matrix, start_sim_date, time_steps, mini_IDs
     sim_df.set_index('Date', inplace=True)
     
     return sim_df
+
 
 
 def create_ensemble_dataframe(ensemble_data, forecast_dates):
@@ -69,6 +71,7 @@ def create_ensemble_dataframe(ensemble_data, forecast_dates):
 def average_lead_times_dataframe(ensemble_df, lead_times_to_aggregate, max_nan_percentage_obs=None):
     # Get the unique forecast dates in the DataFrame
     forecast_dates = ensemble_df.index.get_level_values('Forecast Date').unique()
+
 
     # Perform averaging for each forecast date separately
     averaged_dfs = []
@@ -118,6 +121,7 @@ def average_lead_times_dataframe(ensemble_df, lead_times_to_aggregate, max_nan_p
     averaged_df.set_index('LT', append=True, inplace=True)
 
     return averaged_df
+
 
 
 # Pair observed data with forecast dates and lead times
@@ -175,6 +179,11 @@ def pair_obs_sim(observed_df, simulated_df):
 
 
 
+
+
+#==============================================================================
+# Matrix functions
+
 # Function to aggregate forecasts across lead times directly in the original matrix
 # More efficient and useful for large domains
 def aggregate_lead_times_matrix(ensemble_data, n_aggregated_LTs, axis):
@@ -207,7 +216,6 @@ def aggregate_lead_times_matrix(ensemble_data, n_aggregated_LTs, axis):
     averaged_data = np.stack(LT_segment_averages, axis=axis)
 
     return averaged_data
-
 
 
 
