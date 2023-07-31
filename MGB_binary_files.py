@@ -53,9 +53,12 @@ def save_MGB_ensemble_binary_file(ensemble_forecast, file_path):
 
 
 
-# Reads multplie ensemble binary files from disk  (unit-catchments, time steps, and ensemble members)
+# Reads multiple ensemble binary files from disk  (unit-catchments, time steps, and ensemble members)
 # Reads a set of catchments of interest and saves into a 4D array (unit-catchments, time steps, ensemble members, forecast dates) 
-def read_ensemble_binary_files_sequentially(file_paths, n_unit_catchments, n_time_steps, n_members, selected_catchments):
+def read_ensemble_binary_files_sequentially(file_paths, n_unit_catchments, n_time_steps, n_members, selected_catchments, displace_catchment_ID=True):
+    
+    # Check if the informed mini IDs must be displaced due to index 0 in python 
+    if displace_catchment_ID == True: selected_catchments -= 1
     
     forecast_initializations = len(file_paths)
     n_selected_catchments = len(selected_catchments)
