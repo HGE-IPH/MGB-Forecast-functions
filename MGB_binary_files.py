@@ -112,12 +112,13 @@ def read_MGB_hotstart_file(file_WBhot_path, file_hydhot_path, n_unit_catchments,
             counter += 1
             
             # Other variables currently not included (can be read as above):
+            # Surface reservoir (Vsup)
             # Previous Temperature (TA), 
             # Muskingum Cunge Upstream catchment flow (QM2), 
             # Muskingum Cunge Downstream catchment flow (QJ2) 
-            # Canopy interception volume
-            # Muskingum Cunge initial flow 
-            # Runoff generation (QCEL2)
+            # Canopy interception volume (SI), must be read for each HRU, as in W
+            # Muskingum Cunge initial flow (QRIOINI)
+            # Runoff generated in the catchment (QCEL2)
             
             
         # Reading hydrodynamic variables from StateVars_inertial
@@ -141,8 +142,6 @@ def read_MGB_hotstart_file(file_WBhot_path, file_hydhot_path, n_unit_catchments,
         # Index of Volume level (jtab)
         # Streamflow coming (or leaving) the catchment through connections (Q2face)
         # Updated flow for interconnections (Q2viz)
-        
-        
         
         # Groundwater volume
         Vground = Vbas + Vint
@@ -176,9 +175,3 @@ def get_forecast_file_dates(file_paths):
 
 
 
-
-
-
-
-
-       
