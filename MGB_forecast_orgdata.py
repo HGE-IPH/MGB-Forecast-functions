@@ -9,6 +9,27 @@ import pandas as pd
 
 #=====================================================================================
 #Codes to organize forecast data
+def create_simulation_dataframe(sim_matrix, start_sim_date, time_steps, mini_IDs, displace_catchment_ID, col_names=[]):
+
+    #Check if catchment ID should be displaced due to the index 0 in python 
+    if displace_catchment_ID == True:
+        sim_matrix_2 = np.squeeze(sim_matrix[:, mini_IDs-1])
+    else: 
+        sim_matrix_2=np.squeeze(sim_matrix[:, mini_IDs])
+
+    #Create vector of dates
+    sim_dates = pd.date_range(datetime.datetime.strptime(start_sim_date, '%d-%m-%Y'), periods=time_steps)    
+
+    #Concatenate dates and simulation
+    if col_names == []:
+        sim_df=pd.concat([pd.DataFrame({'Date': sim_dates}), pd.DataFrame(sim_matrix_2)], axis=1)    
+    else:
+        sim_df=pd.concat([pd.DataFrame({'Date': sim_dates}), pd.DataFrame(sim_matrix_2, columns=col_names)], axis=1)
+    
+    sim_df.set_index('Date', inplace=True)
+    
+    return sim_df
+
 
 def create_ensemble_dataframe(ensemble_data, forecast_dates):
     # Ensure the ensemble_data is a 2D or 3D numpy array
