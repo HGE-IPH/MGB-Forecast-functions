@@ -145,6 +145,36 @@ def pair_obs_forecast_LTs(observed_df, ensemble_df):
     return paired_df
 
 
+
+# Pair observed data with simulation according to dates
+def pair_obs_sim(observed_df, simulated_df): 
+        
+    # Adjust the date limits of observed data to avoid errors when trying to get simulated values
+    obs_new_df = observed_df[(observed_df.index >= simulated_df.index[0])]
+    obs_new_df = obs_new_df[(obs_new_df.index <= simulated_df.index[-1])]
+    
+    # Get date indexes from observed dataframe 
+    indexes_obs = obs_new_df.index  
+    sim_values = np.empty((len(indexes_obs)))
+    
+    i=0
+    # Iterate through each forecast date and lead time and pair the observed value
+    for obs_date in indexes_obs:
+       
+        # Extract the simulated value for the target date
+        sim_values[i] = simulated_df.loc[obs_date].values
+        i+=1
+    
+    # Create a new DataFrame from the list of paired data
+    paired_df = pd.DataFrame({'Date': np.array(indexes_obs), 'Obs': np.squeeze(obs_new_df.values), 'Sim': sim_values})
+    
+    # Set the dates as the index to the DataFrame
+    paired_df.set_index(['Date'], inplace=True)
+    
+    return paired_df
+
+
+
 # Function to aggregate forecasts across lead times directly in the original matrix
 # More efficient and useful for large domains
 def aggregate_lead_times_matrix(ensemble_data, n_aggregated_LTs, axis):
