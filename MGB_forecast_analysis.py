@@ -88,20 +88,9 @@ def compute_HSS(obs, fcst, bmrk, thresholds_obs, thresholds_fcst, thresholds_bmr
         bmrk_probabilities = compute_category_proportions(valid_bmrk[bootstrap_indices], thresholds_bmrk)
         obs_categories = compute_category_proportions(valid_obs[bootstrap_indices], thresholds_obs)
         
-        # Identify the most likely category of forecast -> convert probabilistic to deterministic (yes/no) forecast
-        # Find the indices of categories with the maximum probabilities 
-        max_indices_fcst = np.argmax(fcst_probabilities, axis=1)        
-        # Set 1 for the categories with maximum probabilities and 0 elsewhere
-        fcst_categories = np.zeros_like(fcst_probabilities)
-        fcst_categories[np.arange(fcst_probabilities.shape[0]), max_indices_fcst] = 1
-    
-        
-        # Find the indices of categories with the maximum probabilities for the benchmark
-        max_indices_bmrk = np.argmax(bmrk_probabilities, axis=1)        
-        # Set 1 for the categories with maximum probabilities and 0 elsewhere
-        bmrk_categories = np.zeros_like(bmrk_probabilities)
-        bmrk_categories[np.arange(bmrk_probabilities.shape[0]), max_indices_bmrk] = 1    
-    
+        # Identify the most likely category of forecast -> convert probabilistic to deterministic (yes/no) forecast             
+        fcst_categories = identify_dominant_category(fcst_probabilities)
+        bmrk_categories = identify_dominant_category(bmrk_probabilities)        
     
         # Compute the number of hits for forecast and benchmark
         fcst_hits = np.nansum(np.sum(fcst_categories * obs_categories, axis=1))   
@@ -199,9 +188,10 @@ def compute_RPSSclim(obs, fcst, thresholds_obs, thresholds_fcst, target_percenti
     return rpss_bootstrap_samples
 
 
+
+
 #=============================================================================================
 # Additional functions
-
 
 # Return the proportions of ensemble/deterministic data inside categories of interest
 def compute_category_proportions(ensemble_data, thresholds):
@@ -232,6 +222,28 @@ def compute_category_proportions(ensemble_data, thresholds):
     category_proportions /= n_members
 
     return category_proportions
+
+
+
+# Function to identify the most likely category based on forecast probabilities
+def identify_dominant_category(categorical_probs):
+        
+    #categories are represented in columns
+    #categorical_probs can be for multiple time steps (rows)
+  
+    #reshape it to a 2D array if necessary
+    if categorical_probs.ndim == 1:
+        categorical_probs = categorical_probs[np.newaxis,:]  
+  
+    # Find the indices of categories with the maximum probabilities 
+    max_indices = np.argmax(categorical_probs, axis=1)        
+   
+    # Set 1 for the categories with maximum probabilities and 0 elsewhere
+    dom_category = np.zeros_like(categorical_probs)
+    dom_category[np.arange(categorical_probs.shape[0]), max_indices] = 1
+    
+    return dom_category
+
 
 
 # Function to create climatological probabilities for given categories     
