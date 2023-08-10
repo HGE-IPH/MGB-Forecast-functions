@@ -124,10 +124,8 @@ def compute_RPSSclim(obs, fcst, thresholds_obs, thresholds_fcst, target_percenti
        
     # Compute proportions for each category based on climatological expected values
     clim_probabilities = categorical_climatology_probs_forecast(target_percentiles, n_time_steps)
-    # Calculate the climatological cumulative probability for each category. These are always the same independently of time step
-    acc_clim_probabilities = np.cumsum(clim_probabilities,axis=1)
-    
-    # If enabled, use Weigel's analyical formula to compute the D term of debiased RPSclim 
+       
+    # If enabled, use Weigel's analytical formula to compute the D term of debiased RPSclim 
     D = 0.0
     if debiased_rps_clim == True:
         clim_probs = clim_probabilities[0]  
@@ -166,10 +164,11 @@ def compute_RPSSclim(obs, fcst, thresholds_obs, thresholds_fcst, target_percenti
         # Compute proportions for each category
         fcst_probabilities = compute_category_proportions(valid_fcst[bootstrap_indices], thresholds_fcst)
         obs_probabilities = compute_category_proportions(valid_obs[bootstrap_indices], thresholds_obs)
-                
+        
         # Calculate the cumulative probability for each category
         acc_fcst_probabilities = np.cumsum(fcst_probabilities,axis=1)        
         acc_obs_probabilities = np.cumsum(obs_probabilities,axis=1)
+        acc_clim_probabilities = np.cumsum(clim_probabilities[valid_indices],axis=1)
         
         # Calculate the RPS [forecast and climatology] for each time step. 
         rps_fcst = np.sum((acc_fcst_probabilities - acc_obs_probabilities)**2, axis=1)
