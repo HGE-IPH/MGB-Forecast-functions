@@ -9,7 +9,7 @@ from scipy.stats import pearsonr
 #=============================================================================================
 # Metrics section
 
-def anomaly_correlation(obs, fcst, compute_anomalies_obs=True, compute_anomalies_fcst=True):
+def anomaly_correlation(obs, fcst, compute_anomalies_obs = True, compute_anomalies_fcst = True, n_samples_bootstrap = None):
     """
     Parameters:  
     # obs = numpy array of observations, for a given station
@@ -31,82 +31,178 @@ def anomaly_correlation(obs, fcst, compute_anomalies_obs=True, compute_anomalies
     valid_anomaly_obs = anomaly_obs[valid_indices]
     valid_anomaly_fcst = anomaly_fcst[valid_indices]
 
-    # Compute correlation between anomalies and p-value
-    anomaly_correlation, p_value = pearsonr(valid_anomaly_obs, valid_anomaly_fcst)     
+    # Check sampling information
+    if n_samples_bootstrap == None: n_samples_bootstrap = 1
+    acc_bootstrap_samples = np.zeros(n_samples_bootstrap)
 
-    return anomaly_correlation, p_value
+    # Perform bootstrap resampling
+    for i_bt in range(n_samples_bootstrap):
+        # If None, use all values
+        if n_samples_bootstrap == 1:
+            bootstrap_indices = np.arange(0, len(valid_anomaly_obs))    
+        else:
+            # Randomly select indices with replacement for bootstrap sample
+            bootstrap_indices = np.random.choice(len(valid_anomaly_obs), len(valid_anomaly_obs), replace=True)
 
+        # Compute correlation between anomalies and p-value
+        anomaly_correlation, p_value = pearsonr(valid_anomaly_obs[bootstrap_indices], valid_anomaly_fcst[bootstrap_indices])     
 
-
-# Ranked probability Score for categorical forecasts
-def compute_RPS(obs, fcst, thresholds_obs, thresholds_fcst):
-    """
-    Calculate the Ranked Probability Score (RPS) for categorical forecasts.
+        # Store value in the array of bootstrap samples
+        acc_bootstrap_samples[i_bt] = anomaly_correlation
     
-    Parameters:
-        obs (numpy array): Array of observations for a given station.
-        fcst (numpy array): Array of forecasts for a given station and lead time.
-                            Columns refer to the ensemble members.
-        categories_obs (numpy array): Array of numeric threshold values from observed climatology.
-                                      (e.g., below, normal, above)
-        categories_fcst (numpy array): Array of numeric threshold values from forecast climatology.
-                                       (e.g., below, normal, above)
-    
-    Returns:
-        rps (float): Ranked Probability Score.
-    """        
+    return acc_bootstrap_samples
+
+
+
+# Heidke Skill Score for categorical forecasts
+def compute_HSS(obs, fcst, bmrk, thresholds_obs, thresholds_fcst, thresholds_bmrk, n_samples_bootstrap = None):
+
     # If fcst has only one ensemble member (deterministic, 1D array), reshape it to a 2D array
     if fcst.ndim == 1:
        fcst = fcst[:, np.newaxis]
     
     # Get number of time_steps and ens members
     n_time_steps, n_members = fcst.shape
+     
+    # Remove data for indices where observations present NaN values
+    valid_indices = np.isnan(obs) == 0
+    valid_obs = obs[valid_indices]
+    valid_fcst = fcst[valid_indices]
+    valid_bmrk = bmrk[valid_indices]
     
-    # Compute proportions for each category
-    fcst_probabilities = compute_category_proportions(fcst, thresholds_fcst)
-    obs_probabilities = compute_category_proportions(obs, thresholds_obs)
+    # Check sampling information
+    if n_samples_bootstrap == None: n_samples_bootstrap = 1
+    hss_bootstrap_samples = np.zeros(n_samples_bootstrap)
     
-    # Calculate the cumulative probability for each category
-    acc_fcst_probabilities = np.cumsum(fcst_probabilities,axis=1)
-    acc_obs_probabilities = np.cumsum(obs_probabilities,axis=1)
+    # Perform bootstrap resampling
+    for i_bt in range(n_samples_bootstrap):
+        # If None, use all values
+        if n_samples_bootstrap == 1:
+            bootstrap_indices = np.arange(0, len(valid_obs))    
+        else:
+            # Randomly select indices with replacement for bootstrap sample
+            bootstrap_indices = np.random.choice(len(valid_obs), len(valid_obs), replace=True)
+        
+        # Compute proportions for each category
+        fcst_probabilities = compute_category_proportions(valid_fcst[bootstrap_indices], thresholds_fcst)
+        bmrk_probabilities = compute_category_proportions(valid_bmrk[bootstrap_indices], thresholds_bmrk)
+        obs_categories = compute_category_proportions(valid_obs[bootstrap_indices], thresholds_obs)
+        
+        # Identify the most likely category of forecast -> convert probabilistic to deterministic (yes/no) forecast
+        # Find the indices of categories with the maximum probabilities 
+        max_indices_fcst = np.argmax(fcst_probabilities, axis=1)        
+        # Set 1 for the categories with maximum probabilities and 0 elsewhere
+        fcst_categories = np.zeros_like(fcst_probabilities)
+        fcst_categories[np.arange(fcst_probabilities.shape[0]), max_indices_fcst] = 1
     
-    # Calculate the RPS for each time step
-    rps = np.sum((acc_fcst_probabilities - acc_obs_probabilities)**2, axis=1) / n_time_steps
+        
+        # Find the indices of categories with the maximum probabilities for the benchmark
+        max_indices_bmrk = np.argmax(bmrk_probabilities, axis=1)        
+        # Set 1 for the categories with maximum probabilities and 0 elsewhere
+        bmrk_categories = np.zeros_like(bmrk_probabilities)
+        bmrk_categories[np.arange(bmrk_probabilities.shape[0]), max_indices_bmrk] = 1    
     
-    # Calculate the mean RPS
-    mean_fcst_rps = np.nansum(rps)
     
-    return mean_fcst_rps
+        # Compute the number of hits for forecast and benchmark
+        fcst_hits = np.nansum(np.sum(fcst_categories * obs_categories, axis=1))   
+        bmrk_hits = np.nansum(np.sum(bmrk_categories * obs_categories, axis=1)) 
+        total_hits = np.nansum(np.sum(obs_categories, axis=1))
+    
+        # Compute Heidke Skill Score
+        if (total_hits - bmrk_hits) == 0:
+            # Avoid division by 0 if eventually benchmark #hits are perfect
+            hss = np.nan
+        else:
+            hss = (fcst_hits - bmrk_hits) / (total_hits - bmrk_hits)
+    
+        # Store value in the array of bootstrap samples
+        hss_bootstrap_samples[i_bt] = hss
+    
+    return hss_bootstrap_samples
     
 
-# Ranked probability Score for categorical forecasts
-def compute_RPS_climatology(obs, thresholds_obs, target_percentiles):
-    """
-    Calculate the Ranked Probability Score (RPS) for categorical forecasts.
-    """
+
+# Ranked Probability Skill Score for categorical forecasts
+# Using the debiased version from Weigel et al. (2006). The Discrete Brier and Ranked Probability Skill Scores 
+def compute_RPSSclim(obs, fcst, thresholds_obs, thresholds_fcst, target_percentiles, debiased_rps_clim = True, n_samples_bootstrap = None):
     
-    n_time_steps = len(obs)
+    # If fcst has only one ensemble member (deterministic, 1D array), reshape it to a 2D array
+    if fcst.ndim == 1:
+       fcst = fcst[:, np.newaxis]
     
-    # Compute proportions for each category
-    obs_probabilities = compute_category_proportions(obs, thresholds_obs)
+    # Get number of time_steps and ens members
+    n_time_steps, n_members = fcst.shape
+       
     # Compute proportions for each category based on climatological expected values
     clim_probabilities = categorical_climatology_probs_forecast(target_percentiles, n_time_steps)
-    
-    # Calculate the cumulative probability for each category
+    # Calculate the climatological cumulative probability for each category. These are always the same independently of time step
     acc_clim_probabilities = np.cumsum(clim_probabilities,axis=1)
-    acc_obs_probabilities = np.cumsum(obs_probabilities,axis=1)
     
-    # Calculate the RPS for each time step
-    rps = np.sum((acc_clim_probabilities - acc_obs_probabilities)**2, axis=1) / n_time_steps
+    # If enabled, use Weigel's analyical formula to compute the D term of debiased RPSclim 
+    D = 0.0
+    if debiased_rps_clim == True:
+        clim_probs = clim_probabilities[0]  
     
-    # Calculate the mean RPS
-    mean_clim_rps = np.nansum(rps)
+        # Apply Weigel's formula for adding the debiased term D to RPS clim        
+        for k in range(0, len(clim_probs)):
+            for i in range(0,k+1):
+                sum_probs = 0.0
+                for j in range(i+1,k+1):
+                    sum_probs += clim_probs[j]      
+                
+                # D only depends on ensemble size and climatological probabilities    
+                D += clim_probs[i] * (1 - clim_probs[i] - 2 * sum_probs)
+        
+        # Computing final debiasing term
+        D = D / n_members
     
-    return mean_clim_rps
+    # Remove data for indices where observations present NaN values
+    valid_indices = np.isnan(obs) == 0
+    valid_obs = obs[valid_indices]
+    valid_fcst = fcst[valid_indices]
+
+    # Check sampling information
+    if n_samples_bootstrap == None: n_samples_bootstrap = 1
+    rpss_bootstrap_samples = np.zeros(n_samples_bootstrap)
+    
+    # Perform bootstrap resampling
+    for i_bt in range(n_samples_bootstrap):
+        # If None, use all values
+        if n_samples_bootstrap == 1:
+            bootstrap_indices = np.arange(0, len(valid_obs))    
+        else:
+            # Randomly select indices with replacement for bootstrap sample
+            bootstrap_indices = np.random.choice(len(valid_obs), len(valid_obs), replace=True)
+        
+        # Compute proportions for each category
+        fcst_probabilities = compute_category_proportions(valid_fcst[bootstrap_indices], thresholds_fcst)
+        obs_probabilities = compute_category_proportions(valid_obs[bootstrap_indices], thresholds_obs)
+                
+        # Calculate the cumulative probability for each category
+        acc_fcst_probabilities = np.cumsum(fcst_probabilities,axis=1)        
+        acc_obs_probabilities = np.cumsum(obs_probabilities,axis=1)
+        
+        # Calculate the RPS [forecast and climatology] for each time step. 
+        rps_fcst = np.sum((acc_fcst_probabilities - acc_obs_probabilities)**2, axis=1)
+        rps_clim = np.sum((acc_clim_probabilities - acc_obs_probabilities)**2, axis=1) 
+        
+        # Calculate the mean RPS across samples.
+        mean_fcst_rps = np.nanmean(rps_fcst)
+        mean_clim_rps = np.nanmean(rps_clim)
+    
+        # Compute RPSS according to Weigel et al. (2006), to account for ensemble size
+        rpss = 1 - (mean_fcst_rps / (mean_clim_rps + D))
+    
+        # Store value in the array of bootstrap samples
+        rpss_bootstrap_samples[i_bt] = rpss
+
+    return rpss_bootstrap_samples
 
 
 #=============================================================================================
 # Additional functions
+
+
 # Return the proportions of ensemble/deterministic data inside categories of interest
 def compute_category_proportions(ensemble_data, thresholds):
 
@@ -124,6 +220,12 @@ def compute_category_proportions(ensemble_data, thresholds):
                 if ensemble_data[time_step, member] <= threshold:
                     category_proportions[time_step, i] += 1
                     break
+                
+                # Set nan values for categories if data is nan
+                elif np.isnan(ensemble_data[time_step, member]) == 1: 
+                    category_proportions[time_step,i] = np.nan   
+                    break
+                
             else:
                 category_proportions[time_step, -1] += 1
 
