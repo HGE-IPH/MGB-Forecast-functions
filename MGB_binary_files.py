@@ -20,6 +20,17 @@ def read_MGB_binary_file(file_path, n_unit_catchments, n_time_steps):
     return data_MGB
 
 
+# Saves 2D binary files to disk
+def save_MGB_binary_file(file_path, data, dtype='float32'):
+    
+    # convert the data to the appropriate format
+    data = data.astype(dtype)
+    
+    # Write the binary on disk
+    with open(file_path, mode='wb') as f:
+         data.tofile(f)
+
+
 
 # Reads 3D binary files from disk (unit-catchments, time steps, and ensemble members)
 def read_MGB_ensemble_binary_file(file_path, n_unit_catchments, n_time_steps, n_members):
@@ -38,10 +49,12 @@ def read_MGB_ensemble_binary_file(file_path, n_unit_catchments, n_time_steps, n_
 
 
 
-# Saves ensemble binary files into disk (unit-catchments, time steps, and ensemble members)
+# Saves ensemble binary files to disk (unit-catchments, time steps, and ensemble members)
 def save_MGB_ensemble_binary_file(ensemble_forecast, file_path):
+    
     # Precipitation matrix must be a numpy array in float32 type
     # Get the ensemble members
+    
     num_ensemble_members = ensemble_forecast.shape[2]
    
     # Write each member by appending to file
@@ -172,6 +185,3 @@ def get_forecast_file_dates(file_paths):
         vector_dates.append(date_object)
    
     return vector_dates 
-
-
-
