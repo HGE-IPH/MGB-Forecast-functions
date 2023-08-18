@@ -70,11 +70,11 @@ def get_plot(analysis_percentile, analysisDatetime, dirShp, str_variable, export
     # If plot for river, also plot gray background
     if 'QTUDO' in str_variable:
         shp = 'River_network.shp'
-        gdf_m = gpd.read_file(os.path.abspath(os.path.join(__file__, dirShp, 'Unit_catchments_WGS84.shp')))
+        gdf_m = gpd.read_file(os.path.abspath(os.path.join(__file__, dirShp, 'Unit_catchments.shp')))
         for index, row in gdf_m.iterrows():
             gpd.GeoSeries(row['geometry']).plot(ax=plt.gca(), color=(0.7, 0.7, 0.7), edgecolor=None)
     else:
-        shp = 'Unit_catchments_WGS84.shp'
+        shp = 'Unit_catchments.shp'
 
     # Store percentile information into shape features
     gdf = gpd.read_file(os.path.abspath(os.path.join(__file__, dirShp, shp)))
