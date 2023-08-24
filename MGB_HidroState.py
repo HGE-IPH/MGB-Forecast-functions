@@ -123,7 +123,7 @@ def get_plot(analysis_percentile, analysisDatetime, dirShp, str_variable, export
     plt.title(pltTitle)
 
     if exportPlot:
-        plt.savefig(os.path.join(os.path.dirname(__file__), f'{str_variable.strip("_1990-2020.MGB")}_State_{ianalysisDay}/{ianalysisMonth}/{ianalysisYear}-{fanalysisDay}/{fanalysisMonth}/{fanalysisYear}.png'), dpi=300)
+        plt.savefig(os.path.join(os.path.dirname(__file__), f'{str_variable.strip("_1990-2020.MGB")}_State_{ianalysisDay}{ianalysisMonth}{ianalysisYear}-{fanalysisDay}{fanalysisMonth}{fanalysisYear}.png'), dpi=300)
     else:
         plt.show()
 
