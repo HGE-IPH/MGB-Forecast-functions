@@ -33,7 +33,7 @@ def plot_ensemble_forecast(ensemble_data, ylabel='Forecasted value', title='Ense
 
     # Add the ensemble members and the ensemble mean to the legend with their respective colors
     handles = [ensemble_handle] if ensemble_handle else []
-    labels = ['Ensemble Members'] if ensemble_handle else []
+    labels = ['Ensemble Traces'] if ensemble_handle else []
 
     if include_mean:
         handles.append(mean_handle)
@@ -65,7 +65,7 @@ def plot_ensemble_forecast_boxplot(ensemble_data, ylabel='Forecasted value', tit
     plt.figure(dpi=300)
     
     # Plot ensemble members as boxplots with varied colors
-    boxplot = plt.boxplot(boxplot_data, positions=range(1, n_time_steps + 1), patch_artist=True)
+    boxplot = plt.boxplot(boxplot_data, positions=range(1, n_time_steps + 1), patch_artist=True, showfliers=False)
 
     # Customize the colors of the boxplots
     for patch in boxplot['boxes']:
@@ -93,7 +93,7 @@ def plot_ensemble_forecast_boxplot(ensemble_data, ylabel='Forecasted value', tit
     plt.grid(True, color='lightgray', alpha = 0.5)  # Set the grid color to lightgray
 
     # Adjust x-axis limits
-    plt.xlim(1, n_time_steps)
+    plt.xlim(0.5, n_time_steps+0.5)
 
     # Show the plot
     plt.show()
