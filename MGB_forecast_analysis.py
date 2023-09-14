@@ -51,64 +51,7 @@ def anomaly_correlation(obs, fcst, compute_anomalies_obs = True, compute_anomali
         acc_bootstrap_samples[i_bt] = anomaly_correlation
     
     return acc_bootstrap_samples
-
-
-
-# Heidke Skill Score for categorical forecasts
-def compute_HSS(obs, fcst, bmrk, thresholds_obs, thresholds_fcst, thresholds_bmrk, n_samples_bootstrap = None):
-
-    # If fcst has only one ensemble member (deterministic, 1D array), reshape it to a 2D array
-    if fcst.ndim == 1:
-       fcst = fcst[:, np.newaxis]
-    
-    # Get number of time_steps and ens members
-    n_time_steps, n_members = fcst.shape
-     
-    # Remove data for indices where observations present NaN values
-    valid_indices = np.isnan(obs) == 0
-    valid_obs = obs[valid_indices]
-    valid_fcst = fcst[valid_indices]
-    valid_bmrk = bmrk[valid_indices]
-    
-    # Check sampling information
-    if n_samples_bootstrap == None: n_samples_bootstrap = 1
-    hss_bootstrap_samples = np.zeros(n_samples_bootstrap)
-    
-    # Perform bootstrap resampling
-    for i_bt in range(n_samples_bootstrap):
-        # If None, use all values
-        if n_samples_bootstrap == 1:
-            bootstrap_indices = np.arange(0, len(valid_obs))    
-        else:
-            # Randomly select indices with replacement for bootstrap sample
-            bootstrap_indices = np.random.choice(len(valid_obs), len(valid_obs), replace=True)
-        
-        # Compute proportions for each category
-        fcst_probabilities = compute_category_proportions(valid_fcst[bootstrap_indices], thresholds_fcst)
-        bmrk_probabilities = compute_category_proportions(valid_bmrk[bootstrap_indices], thresholds_bmrk)
-        obs_categories = compute_category_proportions(valid_obs[bootstrap_indices], thresholds_obs)
-        
-        # Identify the most likely category of forecast -> convert probabilistic to deterministic (yes/no) forecast             
-        fcst_categories = identify_dominant_category(fcst_probabilities)
-        bmrk_categories = identify_dominant_category(bmrk_probabilities)        
-    
-        # Compute the number of hits for forecast and benchmark
-        fcst_hits = np.nansum(np.sum(fcst_categories * obs_categories, axis=1))   
-        bmrk_hits = np.nansum(np.sum(bmrk_categories * obs_categories, axis=1)) 
-        total_hits = np.nansum(np.sum(obs_categories, axis=1))
-    
-        # Compute Heidke Skill Score
-        if (total_hits - bmrk_hits) == 0:
-            # Avoid division by 0 if eventually benchmark #hits are perfect
-            hss = np.nan
-        else:
-            hss = (fcst_hits - bmrk_hits) / (total_hits - bmrk_hits)
-    
-        # Store value in the array of bootstrap samples
-        hss_bootstrap_samples[i_bt] = hss
-    
-    return hss_bootstrap_samples
-    
+ 
 
 
 # Ranked Probability Skill Score for categorical forecasts
