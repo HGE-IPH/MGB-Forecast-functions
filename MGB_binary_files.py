@@ -49,8 +49,12 @@ def read_MGB_ensemble_binary_file(file_path, n_unit_catchments, n_time_steps, n_
 
 
 
-# Saves ensemble binary files to disk (unit-catchments, time steps, and ensemble members)
-def save_MGB_ensemble_binary_file(ensemble_forecast, file_path):
+# Saves ensemble binary files into disk (unit-catchments, time steps, and ensemble members)
+def save_MGB_ensemble_binary_file(ensemble_forecast, file_path, write_order = 'F'):
+    
+    # write_order can be 'F' (Fortran) or 'C' (Matlab/C)
+    # Use F for dimension [unit_catchment, time_steps, ens_members]
+    # Use C for dimension [time_steps, unit_catchment, ens_members]
     
     # Precipitation matrix must be a numpy array in float32 type
     # Get the ensemble members
@@ -61,8 +65,12 @@ def save_MGB_ensemble_binary_file(ensemble_forecast, file_path):
     with open(file_path, mode='ba+') as f:
    
         for i in range(num_ensemble_members):          
-           slice_ensemble_forecast = ensemble_forecast[:,:,i]           
-           slice_ensemble_forecast.tofile(f)
+           slice_ensemble_forecast = ensemble_forecast[:,:,i] 
+           
+           if write_order == 'F': # Save transposed array
+               slice_ensemble_forecast.T.tofile(f)
+           elif write_order == 'C':
+               slice_ensemble_forecast.tofile(f)
 
 
 
