@@ -1,6 +1,6 @@
 """
 Functions to manipulate binary files from MGB forecast model
-@author: Vinícius A. Siqueira (19/07/2023)
+@author: Vinícius A. Siqueira (09/11/2023)
 IPH-UFRGS
 """
 
@@ -62,7 +62,7 @@ def save_MGB_ensemble_binary_file(ensemble_forecast, file_path, write_order = 'F
     num_ensemble_members = ensemble_forecast.shape[2]
    
     # Write each member by appending to file
-    with open(file_path, mode='ba+') as f:
+    with open(file_path, mode='wb') as f:
    
         for i in range(num_ensemble_members):          
            slice_ensemble_forecast = ensemble_forecast[:,:,i] 
@@ -74,22 +74,25 @@ def save_MGB_ensemble_binary_file(ensemble_forecast, file_path, write_order = 'F
 
 
 
-# Reads multiple ensemble binary files from disk  (unit-catchments, time steps, and ensemble members)
+# Reads multplie ensemble binary files from disk  (unit-catchments, time steps, and ensemble members)
 # Reads a set of catchments of interest and saves into a 4D array (unit-catchments, time steps, ensemble members, forecast dates) 
 def read_ensemble_binary_files_sequentially(file_paths, n_unit_catchments, n_time_steps, n_members, selected_catchments, displace_catchment_ID=True):
     
     # Check if the informed mini IDs must be displaced due to index 0 in python 
-    if displace_catchment_ID == True: selected_catchments -= 1
+    if displace_catchment_ID == True: 
+        sel_ucs = selected_catchments - 1
+    else:
+        sel_ucs = selected_catchments.copy()
     
     forecast_initializations = len(file_paths)
-    n_selected_catchments = len(selected_catchments)
+    n_selected_catchments = len(sel_ucs)
     ensemble_data_files = np.zeros((n_selected_catchments, n_time_steps, n_members, forecast_initializations)).astype('float32')
 
     for i, file_path in enumerate(file_paths):
         file_name = os.path.basename(file_path)  # Extract the filename from the file path
         print(f"Reading file: {file_name}")  # Print the filename only
         data = read_MGB_ensemble_binary_file(file_path, n_unit_catchments, n_time_steps, n_members)
-        for j, selected_catchment in enumerate(selected_catchments):            
+        for j, selected_catchment in enumerate(sel_ucs):            
             ensemble_data_files[j, :, :, i] = data[selected_catchment, :, :]
 
     return ensemble_data_files
