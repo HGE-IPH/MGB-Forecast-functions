@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 
 
-def plot_ensemble_forecast(ensemble_data, ylabel='Forecasted value', title='Ensemble forecast', include_mean=True):
+def plot_ensemble_forecast(ensemble_data, ylabel='Forecasted value', title='Ensemble forecast', dpi=150, include_mean=True):
     n_time_steps, n_members = ensemble_data.shape
     
-    plt.figure(dpi=300)
+    plt.figure(dpi=dpi)
     
     # Plot individual ensemble members in gray color
     ensemble_handle = None
@@ -51,7 +51,7 @@ def plot_ensemble_forecast(ensemble_data, ylabel='Forecasted value', title='Ense
     
  
     
-def plot_ensemble_forecast_boxplot(ensemble_data, ylabel='Forecasted value', title='Ensemble forecast', include_mean=True):
+def plot_ensemble_forecast_boxplot(ensemble_data, ylabel='Forecasted value', title='Ensemble forecast', dpi=150, include_mean=True):
     n_time_steps, n_members = ensemble_data.shape
 
     # Create an array for boxplot data
@@ -62,7 +62,7 @@ def plot_ensemble_forecast_boxplot(ensemble_data, ylabel='Forecasted value', tit
     # Define a colormap
     cmap = get_cmap('coolwarm')
     
-    plt.figure(dpi=300)
+    plt.figure(dpi=dpi)
     
     # Plot ensemble members as boxplots with varied colors
     boxplot = plt.boxplot(boxplot_data, positions=range(1, n_time_steps + 1), patch_artist=True, showfliers=False)
@@ -100,14 +100,14 @@ def plot_ensemble_forecast_boxplot(ensemble_data, ylabel='Forecasted value', tit
     
 
     
-def plot_ensemble_forecast_prediction_intervals(ensemble_data, ylabel='Forecasted value', title='Ensemble forecast', include_mean=True):
+def plot_ensemble_forecast_prediction_intervals(ensemble_data, ylabel='Forecasted value', title='Ensemble forecast', dpi=150, include_mean=True):
     n_time_steps, n_members = ensemble_data.shape
 
     # Calculate the percentiles for the centered prediction intervals
     percentile_50 = np.percentile(ensemble_data, [25, 75], axis=1)
     percentile_95 = np.percentile(ensemble_data, [2.5, 97.5], axis=1)
 
-    plt.figure(dpi=300)
+    plt.figure(dpi=dpi)
 
     # Plot the centered prediction intervals
     interval_50 = plt.fill_between(range(1, n_time_steps + 1), percentile_50[0], percentile_50[1], color='gray', alpha=0.4)
@@ -144,7 +144,7 @@ def plot_ensemble_forecast_prediction_intervals(ensemble_data, ylabel='Forecaste
     
         
    
-def plot_ensemble_forecast_categories(ensemble_data, thresholds, category_colors, boundary_thresholds = None, ylabel='Forecasted value', title='Ensemble forecast', category_legend = [], alpha_cat = 0.7):
+def plot_ensemble_forecast_categories(ensemble_data, thresholds, category_colors, boundary_thresholds = None, ylabel='Forecasted value', title='Ensemble forecast', category_legend = [], dpi=150, alpha_cat = 0.7):
     n_time_steps, n_members = ensemble_data.shape
 
     # Create an array for boxplot data
@@ -152,7 +152,7 @@ def plot_ensemble_forecast_categories(ensemble_data, thresholds, category_colors
     for time_step in range(n_time_steps):
         boxplot_data.append(ensemble_data[time_step, :])
 
-    plt.figure(dpi=300)
+    plt.figure(dpi=dpi)
 
     # Plot ensemble members as boxplots with varied colors
     boxplot = plt.boxplot(boxplot_data, positions=range(1, n_time_steps + 1), patch_artist=True, showfliers=False)
